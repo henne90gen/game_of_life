@@ -1,0 +1,3 @@
+#define Simulation_VERSION_MAJOR @Simulation_VERSION_MAJOR@
+#define Simulation_VERSION_MINOR @Simulation_VERSION_MINOR@
+#define PROJECT_SOURCE_DIR "@PROJECT_SOURCE_DIR@"
