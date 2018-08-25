@@ -30,13 +30,3 @@ struct GameState {
     Window window = {};
     Keyboard keyboard = {};
 };
-
-void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
-
-void textCallback(GLFWwindow *window, unsigned int codepoint);
-
-void cursorPositionCallback(GLFWwindow *window, double xpos, double ypos);
-
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
-
-void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);

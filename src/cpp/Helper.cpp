@@ -1,5 +1,10 @@
 #include "Helper.h"
 
+void changeKeyState(Key *key, bool pressed) {
+    key->previous = key->current;
+    key->current = pressed;
+}
+
 /**
  * http://www.zedwood.com/article/cpp-utf8-char-to-codepoint
  */

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Simulation.h"
+#include "Helper.h"
 #include <iostream>
 #include <string>
 
