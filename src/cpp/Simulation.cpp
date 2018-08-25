@@ -1,4 +1,6 @@
 #include "PythonFunctions.h"
+#include "GLFWFunctions.h"
+#include "Helper.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -6,66 +8,98 @@
 #include <iostream>
 #include <string>
 
-struct Window {
-    GLFWwindow *handle;
-};
+#include "Simulation.h"
 
-void errorCallback(int error, const char *description) {
-    fprintf(stderr, "GLFW error occured (%d): %s\n", error, description);
+void changeKeyState(Key *key, bool pressed) {
+    key->previous = key->current;
+    key->current = pressed;
 }
 
-Window setupGLFW() {
-    Window window = {};
-    if (!glfwInit()) {
-        fprintf(stderr, "Could not initialize GLFW");
-        return window;
+void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+
+    for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
+        if (key == state->keyboard.data[i].keyCode) {
+            changeKeyState(&state->keyboard.data[i], action != GLFW_RELEASE);
+        }
     }
 
-    glfwSetErrorCallback(errorCallback);
-
-    window.handle = glfwCreateWindow(640, 480, "My Window", NULL, NULL);
-    if (!window.handle) {
-        return window;
+    if (key == GLFW_KEY_ESCAPE) {
+        glfwSetWindowShouldClose(window, 1);
     }
-
-    glfwMakeContextCurrent(window.handle);
-
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-
-    glfwSwapInterval(1);
-
-    return window;
 }
 
-void showFrameTime(Window *window) {
+void textCallback(GLFWwindow *window, unsigned int codepoint) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+    // std::cout << codepointToString(codepoint) << " (" << std::to_string(codepoint) << ")" << std::endl;
+}
+
+void cursorPositionCallback(GLFWwindow *window, double xpos, double ypos) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+    // std::cout << "(" << std::to_string(xpos) << "|" << std::to_string(ypos) << ")" << std::endl;
+}
+
+void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+}
+
+void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+}
+
+void input(GameState *state) {
+    for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
+        changeKeyState(&state->keyboard.data[i], state->keyboard.data[i].current);
+    }
+    glfwPollEvents();
+}
+
+void update(GameState *state) {
+    for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
+        Key *key = &state->keyboard.data[i];
+        if (key->current != key->previous) {
+            if (key->current) {
+                std::cout << std::to_string(key->keyCode) << " pressed!" << std::endl;
+            } else {
+                std::cout << std::to_string(key->keyCode) << " released!" << std::endl;
+            }
+        }
+    }
+}
+
+void render(GameState *state) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glfwSwapBuffers(state->window.handle);
+}
+
+void calculateFrameTime(GameState *state) {
     static double start = glfwGetTime();
     double end = glfwGetTime();
-    double frameTime = (end - start) * 1000.0;
-    std::string newTitle =
-        "My Window " + std::to_string(frameTime) + " (" + std::to_string(1000.0 / frameTime) + "fps)";
-    glfwSetWindowTitle(window->handle, newTitle.c_str());
+    state->frameTime = (end - start) * 1000.0;
     start = end;
 }
 
-void tearDownGLFW(Window *window) {
-    glfwDestroyWindow(window->handle);
-    glfwTerminate();
-}
-
 int mainLoop() {
-    Window window = setupGLFW();
-    if (!window.handle) {
+    GameState state = {};
+
+    setupGLFW(&state);
+    if (!state.window.handle) {
         return 1;
     }
 
-    while (!glfwWindowShouldClose(window.handle)) {
+    while (!glfwWindowShouldClose(state.window.handle)) {
+        calculateFrameTime(&state);
 
-        glfwSwapBuffers(window.handle);
-        glfwPollEvents();
-        showFrameTime(&window);
+        input(&state);
+        update(&state);
+        render(&state);
+
+        showFrameTime(&state.window, state.frameTime);
     }
 
-    tearDownGLFW(&window);
+    tearDownGLFW(&state.window);
     return 0;
 }
 
