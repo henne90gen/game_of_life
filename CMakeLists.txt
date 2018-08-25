@@ -28,6 +28,7 @@ find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 set(SOURCES 
+    ${PROJECT_SOURCE_DIR}/cpp/Main.cpp
     ${PROJECT_SOURCE_DIR}/cpp/Simulation.cpp
     ${PROJECT_SOURCE_DIR}/cpp/PythonFunctions.cpp
     ${PROJECT_SOURCE_DIR}/cpp/openglext/glad.c)

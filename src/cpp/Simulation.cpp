@@ -1,5 +1,3 @@
-#include "SimulationConfig.h"
-
 #include "PythonFunctions.h"
 
 #include <glad/glad.h>
@@ -43,18 +41,10 @@ void showFrameTime(Window *window) {
     static double start = glfwGetTime();
     double end = glfwGetTime();
     double frameTime = (end - start) * 1000.0;
-    std::string newTitle = "My Window " + std::to_string(frameTime) + " (" + std::to_string(1000.0 / frameTime) + "fps)";
+    std::string newTitle =
+        "My Window " + std::to_string(frameTime) + " (" + std::to_string(1000.0 / frameTime) + "fps)";
     glfwSetWindowTitle(window->handle, newTitle.c_str());
     start = end;
-}
-
-void mainLoop(Window *window) {
-    while (!glfwWindowShouldClose(window->handle)) {
-
-        glfwSwapBuffers(window->handle);
-        glfwPollEvents();
-        showFrameTime(window);
-    }
 }
 
 void tearDownGLFW(Window *window) {
@@ -62,23 +52,19 @@ void tearDownGLFW(Window *window) {
     glfwTerminate();
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: call pythonfile funcname [args]\n");
-        return 1;
-    }
-
-    setupPython();
-    // callPythonFunction(argc, argv);
-
+int mainLoop() {
     Window window = setupGLFW();
     if (!window.handle) {
         return 1;
     }
 
-    mainLoop(&window);
+    while (!glfwWindowShouldClose(window.handle)) {
+
+        glfwSwapBuffers(window.handle);
+        glfwPollEvents();
+        showFrameTime(&window);
+    }
 
     tearDownGLFW(&window);
-    tearDownPython();
     return 0;
 }
