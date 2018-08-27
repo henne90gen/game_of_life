@@ -36,6 +36,13 @@ void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
     GameState *state = (GameState *)glfwGetWindowUserPointer(window);
 }
 
+void windowRefreshCallback(GLFWwindow *window) {
+    GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    glViewport(0, 0, width, height);
+}
+
 void setupGLFW(GameState *state) {
     if (!glfwInit()) {
         fprintf(stderr, "Could not initialize GLFW");
@@ -54,13 +61,14 @@ void setupGLFW(GameState *state) {
 
     glfwSwapInterval(1);
     glfwSetWindowUserPointer(state->window.handle, (void *)state);
-    glfwSetInputMode(state->window.handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(state->window.handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetKeyCallback(state->window.handle, keyboardCallback);
     glfwSetCharCallback(state->window.handle, textCallback);
     glfwSetCursorPosCallback(state->window.handle, cursorPositionCallback);
     glfwSetMouseButtonCallback(state->window.handle, mouseButtonCallback);
     glfwSetScrollCallback(state->window.handle, scrollCallback);
+    glfwSetWindowRefreshCallback(state->window.handle, windowRefreshCallback);
 }
 
 void showFrameTime(Window *window, double frameTime) {

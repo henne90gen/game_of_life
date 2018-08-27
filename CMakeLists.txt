@@ -14,6 +14,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw)
+add_subdirectory(glm)
 include_directories(${PROJECT_SOURCE_DIR}/cpp/openglext/include)
 
 configure_file(
@@ -36,4 +37,4 @@ set(SOURCES
 
 add_executable(Simulation ${SOURCES})
 
-target_link_libraries(Simulation ${PYTHON_LIBRARIES} glfw)
+target_link_libraries(Simulation ${PYTHON_LIBRARIES} glfw glm)

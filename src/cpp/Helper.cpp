@@ -1,5 +1,12 @@
 #include "Helper.h"
 
+void calculateFrameTime(GameState *state) {
+    static double start = glfwGetTime();
+    double end = glfwGetTime();
+    state->frameTime = (end - start) * 1000.0;
+    start = end;
+}
+
 void changeKeyState(Key *key, bool pressed) {
     key->previous = key->current;
     key->current = pressed;

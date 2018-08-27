@@ -53,8 +53,9 @@ int callPythonFunction(int argc, char *argv[]) {
                 return 1;
             }
         } else {
-            if (PyErr_Occurred())
+            if (PyErr_Occurred()) {
                 PyErr_Print();
+            }
             fprintf(stderr, "Cannot find function \"%s\"\n", argv[2]);
         }
         Py_XDECREF(pFunc);
