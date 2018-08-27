@@ -25,20 +25,46 @@ void input(GameState *state) {
     glfwPollEvents();
 }
 
-void update(GameState *state) {
-    // for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
-    //     Key *key = &state->keyboard.data[i];
-    //     if (key->current != key->previous) {
-    //         if (key->current) {
-    //             std::cout << std::to_string(key->keyCode) << " pressed!" << std::endl;
-    //         } else {
-    //             std::cout << std::to_string(key->keyCode) << " released!" << std::endl;
-    //         }
-    //     }
-    // }
-    double start, end;
+int aliveNeighbors(bool *board, int width, int height, int position) {
+    bool neighbors[8] = {};
+    if (position % width > 0) {
+        neighbors[0] = board[position - 1];
+    }
+    if (position % width < width - 1) {
+        neighbors[1] = board[position + 1];
+    }
 
-    start = glfwGetTime();
+    if (position >= width) {
+        neighbors[2] = board[position - width];
+    }
+    if (position < width * height - width) {
+        neighbors[3] = board[position + width];
+    }
+
+    if (position < width * height - width && position % width > 0) {
+        neighbors[4] = board[position + width - 1];
+    }
+    if (position < width * height - width && position % width < width - 1) {
+        neighbors[5] = board[position + width + 1];
+    }
+
+    if (position >= width && position % width > 0) {
+        neighbors[6] = board[position - width - 1];
+    }
+    if (position >= width && position % width < width - 1) {
+        neighbors[7] = board[position - width + 1];
+    }
+
+    int result = 0;
+    for (int i = 0; i < 8; i++) {
+        if (neighbors[i]) {
+            result++;
+        }
+    }
+    return result;
+}
+
+void stepGameOfLifePython(GameState *state) {
     PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
     PyObject *module = PyImport_Import(moduleName);
     Py_DECREF(moduleName);
@@ -60,10 +86,6 @@ void update(GameState *state) {
         return;
     }
 
-    end = glfwGetTime();
-    printf("Getting function: %fs\n", end - start);
-    start = end;
-
     PyObject *arguments = PyTuple_New(3);
     unsigned int boardSize = state->board.width * state->board.height;
     PyObject *board = PyList_New(boardSize);
@@ -75,16 +97,8 @@ void update(GameState *state) {
     PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
     PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
 
-    end = glfwGetTime();
-    // printf("Creating arguments: %fs\n", end - start);
-    start = end;
-
     PyObject *result = PyObject_CallObject(function, arguments);
     Py_DECREF(arguments);
-
-    end = glfwGetTime();
-    // printf("Calling function: %fs\n", end - start);
-    start = end;
 
     if (result == NULL) {
         Py_DECREF(function);
@@ -97,10 +111,63 @@ void update(GameState *state) {
         PyObject *cell = PyList_GetItem(result, i);
         state->board.data[i] = PyLong_AsLong(cell);
     }
+
     Py_DECREF(result);
+}
+
+void stepGameOfLife(GameState *state) {
+    unsigned int boardSize = state->board.width * state->board.height;
+    bool *newBoard = (bool *)malloc(boardSize * sizeof(bool));
+    for (int i = 0; i < boardSize; i++) {
+        int aliveCounter = aliveNeighbors(state->board.data, state->board.width, state->board.height, i);
+        if (!state->board.data[i]) {
+            if (aliveCounter == 3) {
+                newBoard[i] = true;
+            } else {
+                newBoard[i] = false;
+            }
+        } else {
+            if (aliveCounter < 2) {
+                newBoard[i] = false;
+            } else if (2 <= aliveCounter && aliveCounter <= 3) {
+                newBoard[i] = true;
+            } else {
+                newBoard[i] = false;
+            }
+        }
+    }
+
+    for (int i = 0; i < boardSize; i++) {
+        state->board.data[i] = newBoard[i];
+    }
+
+    free(newBoard);
+}
+
+void update(GameState *state) {
+    // for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
+    //     Key *key = &state->keyboard.data[i];
+    //     if (key->current != key->previous) {
+    //         if (key->current) {
+    //             std::cout << std::to_string(key->keyCode) << " pressed!" << std::endl;
+    //         } else {
+    //             std::cout << std::to_string(key->keyCode) << " released!" << std::endl;
+    //         }
+    //     }
+    // }
+    double start, end;
+    start = glfwGetTime();
+
+    stepGameOfLifePython(state);
 
     end = glfwGetTime();
-    // printf("Processing result: %fs\n", end - start);
+    printf("Python: %fs\n", end - start);
+    start = end;
+
+    stepGameOfLife(state);
+
+    end = glfwGetTime();
+    printf("C++:    %fs\n", end - start);
     start = end;
 }
 
@@ -280,11 +347,6 @@ void render(GameState *state) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: call pythonfile funcname [args]\n");
-        return 1;
-    }
-
     GameState state = {};
 
     setupPython();

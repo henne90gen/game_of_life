@@ -31,8 +31,7 @@ def update(board: list, width: int, height: int) -> list:
         for row, row_list in enumerate(pattern):
             for col, cell in enumerate(row_list):
                 board[(start_row + row) * width + start_col + col] = cell
-
-    start = datetime.now()
+        return board
 
     def alive_neighbors(position):
         neighbors = []
@@ -59,10 +58,6 @@ def update(board: list, width: int, height: int) -> list:
 
         return board[position], sum(map(int, map(lambda index: board[index], neighbors)))
 
-    end = datetime.now()
-    print(f"Creating functions: {(end - start).total_seconds()}")
-    start = end
-
     def flip(args):
         alive, alive_counter = args
         if not alive:
@@ -78,10 +73,4 @@ def update(board: list, width: int, height: int) -> list:
             else:
                 return False
 
-    result = list(map(flip, map(alive_neighbors, range(len(board)))))
-
-    end = datetime.now()
-    print(f"Doing logic: {(end - start).total_seconds()}")
-    start = end
-
-    return result
+    return list(map(flip, map(alive_neighbors, range(len(board)))))
