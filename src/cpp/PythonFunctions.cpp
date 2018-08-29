@@ -1,20 +1,54 @@
 #include "SimulationConfig.h"
 
-#include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "Python.h"
+#include "numpy/arrayobject.h"
 
 #include <iostream>
 #include <string>
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
+#include <array>
+#include <algorithm>
+#include <iterator>
+
+int *importNumpy() {
+    // this wrapper is necessary, because import_array is a macro that tries to return something
+    import_array();
+    return 0;
+}
+
+std::string exec(const char *cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    if (!pipe)
+        throw std::runtime_error("popen() failed!");
+    while (!feof(pipe.get())) {
+        if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+            result += buffer.data();
+    }
+    return result;
+}
 
 void setupPython() {
-    std::wstring path = Py_GetPath();
-    std::string sourceDir = std::string(PROJECT_SOURCE_DIR);
-    path += std::wstring(L":") + std::wstring(sourceDir.begin(), sourceDir.end()) + std::wstring(L"/python/");
-    Py_SetPath(path.c_str());
-    // std::wcout << path << std::endl;
+    Py_SetProgramName(L"simulation");
+
+    std::string pythonScript = "import sys; print(':'.join(filter(lambda s: s != '', sys.path)))";
+    std::string systemPythonPath = exec(std::string("python -c \"" + pythonScript + "\"").c_str());
+    std::string cleanedSystemPythonPath;
+    std::remove_copy(systemPythonPath.begin(), systemPythonPath.end(), std::back_inserter(cleanedSystemPythonPath),
+                     '\n');
+    std::string scriptDir = std::string(PROJECT_SOURCE_DIR) + "/python/";
+    std::string pythonPath = cleanedSystemPythonPath + ":" + scriptDir;
+    Py_SetPath(std::wstring(pythonPath.begin(), pythonPath.end()).c_str());
 
     // add modules that need to be accessible from python here
 
     Py_Initialize();
+    importNumpy();
+    PyRun_SimpleString("import sys; sys.path");
 }
 
 int callPythonFunction(int argc, char *argv[]) {

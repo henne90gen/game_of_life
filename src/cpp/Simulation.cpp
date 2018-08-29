@@ -115,6 +115,106 @@ void stepGameOfLifePython(GameState *state) {
     Py_DECREF(result);
 }
 
+void stepGameOfLifePythonPart(GameState *state) {
+    PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
+    PyObject *module = PyImport_Import(moduleName);
+    Py_DECREF(moduleName);
+
+    if (!module) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot import module \"%s\"\n", moduleName);
+    }
+
+    const char *functionName = "update_part";
+    PyObject *function = PyObject_GetAttrString(module, functionName);
+    if (!function || !PyCallable_Check(function)) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot find function \"%s\"\n", functionName);
+        return;
+    }
+
+    PyObject *arguments = PyTuple_New(4);
+    unsigned int boardSize = state->board.width * state->board.height;
+    PyObject *board = PyList_New(boardSize);
+    for (int i = 0; i < boardSize; i++) {
+        PyObject *cell = PyBool_FromLong(state->board.data[i]);
+        PyList_SetItem(board, i, cell);
+    }
+    PyTuple_SetItem(arguments, 0, board);
+    PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
+    PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
+    for (int i = 0; i < boardSize; i++) {
+        PyTuple_SetItem(arguments, 3, PyLong_FromLong(i));
+        PyObject *result = PyObject_CallObject(function, arguments);
+        if (result == NULL) {
+            Py_DECREF(function);
+            Py_DECREF(module);
+            PyErr_Print();
+            fprintf(stderr, "Call failed\n");
+        }
+        // PyObject *cell = PyList_GetItem(result, i);
+        state->board.data[i] = PyLong_AsLong(result);
+        Py_DECREF(result);
+    }
+
+    Py_DECREF(arguments);
+}
+
+void stepGameOfLifePythonNumpy(GameState *state) {
+    PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
+    PyObject *module = PyImport_Import(moduleName);
+    Py_DECREF(moduleName);
+
+    if (!module) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot import module \"%s\"\n", moduleName);
+    }
+
+    const char *functionName = "update_numpy";
+    PyObject *function = PyObject_GetAttrString(module, functionName);
+    if (!function || !PyCallable_Check(function)) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot find function \"%s\"\n", functionName);
+        return;
+    }
+
+    PyObject *arguments = PyTuple_New(3);
+    unsigned int boardSize = state->board.width * state->board.height;
+    PyObject *board = PyList_New(boardSize);
+    for (int i = 0; i < boardSize; i++) {
+        PyObject *cell = PyBool_FromLong(state->board.data[i]);
+        PyList_SetItem(board, i, cell);
+    }
+    PyTuple_SetItem(arguments, 0, board);
+    PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
+    PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
+
+    PyObject *result = PyObject_CallObject(function, arguments);
+    Py_DECREF(arguments);
+
+    if (result == NULL) {
+        Py_DECREF(function);
+        Py_DECREF(module);
+        PyErr_Print();
+        fprintf(stderr, "Call failed\n");
+    }
+
+    for (int i = 0; i < boardSize; i++) {
+        PyObject *cell = PyList_GetItem(result, i);
+        state->board.data[i] = PyLong_AsLong(cell);
+    }
+
+    Py_DECREF(result);
+}
+
 void stepGameOfLife(GameState *state) {
     unsigned int boardSize = state->board.width * state->board.height;
     bool *newBoard = (bool *)malloc(boardSize * sizeof(bool));
@@ -162,6 +262,12 @@ void update(GameState *state) {
 
     end = glfwGetTime();
     printf("Python: %fs\n", end - start);
+    start = end;
+
+    stepGameOfLifePythonPart(state);
+
+    end = glfwGetTime();
+    printf("PythonPart: %fs\n", end - start);
     start = end;
 
     stepGameOfLife(state);
