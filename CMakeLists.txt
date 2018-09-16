@@ -39,6 +39,7 @@ set(SOURCES
   ${PROJECT_SOURCE_DIR}/cpp/Helper.cpp
   ${PROJECT_SOURCE_DIR}/cpp/GLFWFunctions.cpp
   ${PROJECT_SOURCE_DIR}/cpp/PythonFunctions.cpp
+  ${PROJECT_SOURCE_DIR}/cpp/Render.cpp
   ${PROJECT_SOURCE_DIR}/cpp/openglext/glad.c
 )
 

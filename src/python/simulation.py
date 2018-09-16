@@ -8,21 +8,6 @@ initialized = False
 # Any live cell with more than three live neighbors dies, as if by overpopulation.
 # Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 
-pattern = [
-    [0, 0, 1, 0, 0],
-    [0, 1, 1, 1, 0],
-    [1, 1, 1, 1, 1],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 0],
-    [0, 0, 1, 0, 0],
-]
-
 
 def alive_neighbors(board: list, width: int, height: int, position: int):
     neighbors = []
@@ -86,16 +71,6 @@ def update_part(board: list, width: int, height: int, index: int):
 
 
 def update(board: list, width: int, height: int) -> list:
-    global initialized
-    if not initialized:
-        initialized = True
-        start_row = 5
-        start_col = 5
-        for row, row_list in enumerate(pattern):
-            for col, cell in enumerate(row_list):
-                board[(start_row + row) * width + start_col + col] = cell
-        return board
-
     return list(
         map(lambda arr: flip(arr[0], arr[1]),
             map(lambda i: alive_neighbors(board, width, height, i),

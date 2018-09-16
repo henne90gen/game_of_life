@@ -25,8 +25,8 @@ union Keyboard {
     Key data[4];
 };
 
-#define BOARD_WIDTH 20
-#define BOARD_HEIGHT 20
+#define BOARD_WIDTH 500
+#define BOARD_HEIGHT 500
 
 struct Board {
     unsigned int width = BOARD_WIDTH;
