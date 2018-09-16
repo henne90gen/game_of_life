@@ -1,7 +1,8 @@
 #include "SimulationConfig.h"
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "Python.h"
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define PY_ARRAY_UNIQUE_SYMBOL simulation
 #include "numpy/arrayobject.h"
 
 #include <iostream>
@@ -19,10 +20,10 @@ int *importNumpy() {
     return 0;
 }
 
-std::string exec(const char *cmd) {
+std::string execPythonScript(std::string command) {
     std::array<char, 128> buffer;
     std::string result;
-    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    std::shared_ptr<FILE> pipe(popen(("python -c \"" + command + "\"").c_str(), "r"), pclose);
     if (!pipe)
         throw std::runtime_error("popen() failed!");
     while (!feof(pipe.get())) {
@@ -36,7 +37,7 @@ void setupPython() {
     Py_SetProgramName(L"simulation");
 
     std::string pythonScript = "import sys; print(':'.join(filter(lambda s: s != '', sys.path)))";
-    std::string systemPythonPath = exec(std::string("python -c \"" + pythonScript + "\"").c_str());
+    std::string systemPythonPath = execPythonScript(pythonScript);
     std::string cleanedSystemPythonPath;
     std::remove_copy(systemPythonPath.begin(), systemPythonPath.end(), std::back_inserter(cleanedSystemPythonPath),
                      '\n');
@@ -48,7 +49,6 @@ void setupPython() {
 
     Py_Initialize();
     importNumpy();
-    PyRun_SimpleString("import sys; sys.path");
 }
 
 int callPythonFunction(int argc, char *argv[]) {

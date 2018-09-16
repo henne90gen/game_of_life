@@ -1,5 +1,9 @@
 #include "Python.h"
 
+#define NO_IMPORT_ARRAY
+#define PY_ARRAY_UNIQUE_SYMBOL simulation
+#include "numpy/arrayobject.h"
+
 #include "PythonFunctions.h"
 #include "GLFWFunctions.h"
 
@@ -188,12 +192,9 @@ void stepGameOfLifePythonNumpy(GameState *state) {
 
     PyObject *arguments = PyTuple_New(3);
     unsigned int boardSize = state->board.width * state->board.height;
-    PyObject *board = PyList_New(boardSize);
-    for (int i = 0; i < boardSize; i++) {
-        PyObject *cell = PyBool_FromLong(state->board.data[i]);
-        PyList_SetItem(board, i, cell);
-    }
-    PyTuple_SetItem(arguments, 0, board);
+    long int dims[1] = {boardSize};
+    PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_BOOL, &state->board.data);
+    PyTuple_SetItem(arguments, 0, arr);
     PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
     PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
 
@@ -205,14 +206,9 @@ void stepGameOfLifePythonNumpy(GameState *state) {
         Py_DECREF(module);
         PyErr_Print();
         fprintf(stderr, "Call failed\n");
+    } else {
+        Py_DECREF(result);
     }
-
-    for (int i = 0; i < boardSize; i++) {
-        PyObject *cell = PyList_GetItem(result, i);
-        state->board.data[i] = PyLong_AsLong(cell);
-    }
-
-    Py_DECREF(result);
 }
 
 void stepGameOfLife(GameState *state) {
@@ -255,26 +251,26 @@ void update(GameState *state) {
     //         }
     //     }
     // }
-    double start, end;
-    start = glfwGetTime();
+    struct GameOfLifeFunction {
+        const char name[30];
+        void (*function)(GameState *state);
+    };
 
-    stepGameOfLifePython(state);
+    GameOfLifeFunction functions[4] = {
+        {"C++:        ", stepGameOfLife},
+        {"PythonNumpy:", stepGameOfLifePythonNumpy},
+        {"PythonPart: ", stepGameOfLifePythonPart},
+        {"Python:     ", stepGameOfLifePython},
+    };
 
-    end = glfwGetTime();
-    printf("Python: %fs\n", end - start);
-    start = end;
-
-    stepGameOfLifePythonPart(state);
-
-    end = glfwGetTime();
-    printf("PythonPart: %fs\n", end - start);
-    start = end;
-
-    stepGameOfLife(state);
-
-    end = glfwGetTime();
-    printf("C++:    %fs\n", end - start);
-    start = end;
+    double start = glfwGetTime();
+    double end;
+    for (int i = 0; i < 4; i++) {
+        functions[i].function(state);
+        end = glfwGetTime();
+        printf("%s %fs\n", functions[i].name, end - start);
+        start = end;
+    }
 }
 
 GLuint LoadShaders(const char *vertex_file_path, const char *fragment_file_path) {
