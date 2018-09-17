@@ -14,3 +14,9 @@ To download glfw run
 git submodule init
 git submodule update
 ```
+
+## Build
+
+```bash
+make
+```

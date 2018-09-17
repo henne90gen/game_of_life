@@ -1,5 +1,3 @@
 .vscode/
-CMakeFiles/
-build/
+out/
 **__pycache__**
-Makefile

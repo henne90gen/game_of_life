@@ -198,7 +198,8 @@ void stepGameOfLifePythonPart(GameState *state) {
 }
 
 void stepGameOfLifePythonNumpy(GameState *state) {
-    PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
+    const char * moduleNameString = "simulation";
+    PyObject *moduleName = PyUnicode_DecodeFSDefault(moduleNameString);
     PyObject *module = PyImport_Import(moduleName);
     Py_DECREF(moduleName);
 
@@ -206,7 +207,7 @@ void stepGameOfLifePythonNumpy(GameState *state) {
         if (PyErr_Occurred()) {
             PyErr_Print();
         }
-        fprintf(stderr, "Cannot import module \"%s\"\n", moduleName);
+        fprintf(stderr, "Cannot import module \"%s\"\n", moduleNameString);
     }
 
     const char *functionName = "update_numpy";
@@ -235,6 +236,7 @@ void stepGameOfLifePythonNumpy(GameState *state) {
         Py_DECREF(module);
         PyErr_Print();
         fprintf(stderr, "Call failed\n");
+        exit(1);
     } else {
         Py_DECREF(result);
     }
