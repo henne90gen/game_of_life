@@ -92,9 +92,7 @@ void stepGameOfLife(GameState *state) {
         }
     }
 
-    for (int i = 0; i < boardSize; i++) {
-        state->board.data[i] = newBoard[i];
-    }
+    memcpy(state->board.data, newBoard, boardSize);
 
     free(newBoard);
 }
