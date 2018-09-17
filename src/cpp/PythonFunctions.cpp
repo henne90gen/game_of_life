@@ -43,7 +43,6 @@ void setupPython() {
                      '\n');
     std::string scriptDir = std::string(PROJECT_SOURCE_DIR) + "/python/";
     std::string pythonPath = cleanedSystemPythonPath + ":" + scriptDir;
-    std::cout << pythonPath << std::endl;
     Py_SetPath(std::wstring(pythonPath.begin(), pythonPath.end()).c_str());
 
     // add modules that need to be accessible from python here
