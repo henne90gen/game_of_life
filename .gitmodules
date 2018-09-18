@@ -4,3 +4,6 @@
 [submodule "glm"]
 	path = glm
 	url = git@github.com:g-truc/glm.git
+[submodule "unittest-cpp"]
+	path = unittest-cpp
+	url = git@github.com:unittest-cpp/unittest-cpp.git

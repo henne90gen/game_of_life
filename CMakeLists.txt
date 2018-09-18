@@ -18,6 +18,7 @@ set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw)
 add_subdirectory(glm)
+add_subdirectory(unittest-cpp)
 
 add_subdirectory(src)
 
