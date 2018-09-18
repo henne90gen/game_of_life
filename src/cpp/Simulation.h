@@ -23,8 +23,14 @@ union Keyboard {
     Key data[4];
 };
 
-#define BOARD_WIDTH 20
-#define BOARD_HEIGHT 20
+struct Mouse {
+    bool clicked;
+    int x;
+    int y;
+};
+
+#define BOARD_WIDTH 200
+#define BOARD_HEIGHT 200
 
 struct Board {
     unsigned int width = BOARD_WIDTH;
@@ -35,6 +41,7 @@ struct Board {
 struct GameState {
     double frameTime = 0;
     Keyboard keyboard = {};
+    Mouse mouse;
     Board board = {};
 };
 

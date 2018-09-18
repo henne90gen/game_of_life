@@ -36,10 +36,19 @@ void textCallback(GLFWwindow *window, unsigned int codepoint) {
 void cursorPositionCallback(GLFWwindow *window, double xpos, double ypos) {
     GameState *state = (GameState *)glfwGetWindowUserPointer(window);
     // std::cout << "(" << std::to_string(xpos) << "|" << std::to_string(ypos) << ")" << std::endl;
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    state->mouse.x = xpos * state->board.width / width;
+    state->mouse.y = state->board.height - ypos * state->board.height / height;
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
     GameState *state = (GameState *)glfwGetWindowUserPointer(window);
+    if (action == GLFW_PRESS) {
+        state->mouse.clicked = true;
+    } else if (action == GLFW_RELEASE) {
+        state->mouse.clicked = false;
+    }
 }
 
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {

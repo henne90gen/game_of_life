@@ -237,14 +237,23 @@ void update(GameState *state) {
     //         }
     //     }
     // }
+
+    if (state->mouse.clicked) {
+        state->board.data[state->mouse.x + state->board.width * state->mouse.y] = true;
+        state->board.data[state->mouse.x + 1 + state->board.width * state->mouse.y] = true;
+        state->board.data[state->mouse.x - 1 + state->board.width * state->mouse.y] = true;
+        state->board.data[state->mouse.x + state->board.width * (state->mouse.y + 1)] = true;
+        state->board.data[state->mouse.x + state->board.width * (state->mouse.y - 1)] = true;
+    }
+
     struct GameOfLifeFunction {
         const char name[30];
         void (*function)(Board *board);
     };
 
     GameOfLifeFunction functions[4] = {
-        {"C++:        ", stepGameOfLife},            //
-        {"PythonNumpy:", stepGameOfLifePythonNumpy}, //
+        {"C++:        ", stepGameOfLife}, //
+        // {"PythonNumpy:", stepGameOfLifePythonNumpy}, //
         // {"PythonPart: ", stepGameOfLifePythonPart},
         // {"Python:     ", stepGameOfLifePython},
     };
