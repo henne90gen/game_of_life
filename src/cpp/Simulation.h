@@ -1,11 +1,9 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-struct Window {
-    GLFWwindow *handle;
-};
+#define KEY_W 87
+#define KEY_S 83
+#define KEY_A 65
+#define KEY_D 68
 
 struct Key {
     int keyCode;
@@ -14,10 +12,10 @@ struct Key {
 };
 
 struct Keys {
-    Key up = {GLFW_KEY_W};
-    Key down = {GLFW_KEY_S};
-    Key left = {GLFW_KEY_A};
-    Key right = {GLFW_KEY_D};
+    Key up = {KEY_W};
+    Key down = {KEY_S};
+    Key left = {KEY_A};
+    Key right = {KEY_D};
 };
 
 union Keyboard {
@@ -36,7 +34,14 @@ struct Board {
 
 struct GameState {
     double frameTime = 0;
-    Window window = {};
     Keyboard keyboard = {};
     Board board = {};
 };
+
+void initGameState(GameState *state);
+
+void update(GameState *state);
+
+void input(GameState *state);
+
+void stepGameOfLife(Board *board);

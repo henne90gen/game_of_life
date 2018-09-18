@@ -1,8 +1,9 @@
 #include "Helper.h"
+#include "Interface.h"
 
 void calculateFrameTime(GameState *state) {
-    static double start = glfwGetTime();
-    double end = glfwGetTime();
+    static double start = getTime();
+    double end = getTime();
     state->frameTime = (end - start) * 1000.0;
     start = end;
 }

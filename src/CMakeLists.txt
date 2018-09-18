@@ -1,15 +1,12 @@
-include_directories(
-    ${PROJECT_SOURCE_DIR}/cpp/openglext/include
-    ${PROJECT_BINARY_DIR}
-)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${Simulation_SOURCE_DIR}/modules)
 find_package(PythonInterp REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(NumPy REQUIRED)
 include_directories(
-  ${PYTHON_INCLUDE_DIRS}
-  ${NumPy_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIRS}
+    ${NumPy_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/cpp/openglext/include
+    ${PROJECT_BINARY_DIR}
 )
 
 configure_file(
@@ -18,14 +15,26 @@ configure_file(
 )
 
 set(SOURCES
+    ${PROJECT_SOURCE_DIR}/cpp/Main.cpp
+)
+
+set(SIMULATION_SOURCES
     ${PROJECT_SOURCE_DIR}/cpp/Simulation.cpp
     ${PROJECT_SOURCE_DIR}/cpp/Helper.cpp
-    ${PROJECT_SOURCE_DIR}/cpp/GLFWFunctions.cpp
     ${PROJECT_SOURCE_DIR}/cpp/PythonFunctions.cpp
+)
+
+set(GRAPHICS_SOURCES
+    ${PROJECT_SOURCE_DIR}/cpp/GLFWFunctions.cpp
     ${PROJECT_SOURCE_DIR}/cpp/Render.cpp
     ${PROJECT_SOURCE_DIR}/cpp/openglext/glad.c
 )
 
-add_executable(Simulation ${SOURCES})
+add_library(Graphics ${GRAPHICS_SOURCES})
+target_link_libraries(Graphics glfw glm)
 
-target_link_libraries(Simulation ${PYTHON_LIBRARIES} glfw glm)
+add_library(Simulation ${SIMULATION_SOURCES})
+target_link_libraries(Simulation ${PYTHON_LIBRARIES})
+
+add_executable(Main ${SOURCES})
+target_link_libraries(Main Simulation Graphics)

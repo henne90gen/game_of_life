@@ -176,6 +176,4 @@ void render(GameState *state) {
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glUseProgram(0);
-
-    glfwSwapBuffers(state->window.handle);
 }

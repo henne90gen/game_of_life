@@ -14,7 +14,10 @@ configure:
 
 test:
 	@make -s build
-	@cd out && ctest -C out
+	@cd out && ctest --output-on-failure
+
+run:
+	@./out/src/Main
 
 clean:
 	@rm out -rf

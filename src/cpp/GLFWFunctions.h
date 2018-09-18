@@ -1,12 +1,16 @@
 #pragma once
 
-#include "Simulation.h"
-#include "Helper.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 #include <string>
 
-void setupGLFW(GameState *state);
+#include "Simulation.h"
 
-void tearDownGLFW(Window *window);
 
-void showFrameTime(Window *window, double frameTime);
+GLFWwindow *setupGLFW(GameState *state);
+
+void tearDownGLFW(GLFWwindow *window);
+
+void showFrameTime(GLFWwindow *window, double frameTime);

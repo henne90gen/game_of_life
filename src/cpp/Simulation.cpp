@@ -5,13 +5,6 @@
 #define PY_ARRAY_UNIQUE_SYMBOL simulation
 #include "numpy/arrayobject.h"
 
-#include "PythonFunctions.h"
-#include "GLFWFunctions.h"
-
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -20,16 +13,7 @@
 
 #include "Simulation.h"
 #include "Helper.h"
-#include "Render.h"
-
-void input(GameState *state) {
-    // move key state from current to previous
-    for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
-        changeKeyState(&state->keyboard.data[i], state->keyboard.data[i].current);
-    }
-
-    glfwPollEvents();
-}
+#include "Interface.h"
 
 int aliveNeighbors(bool *board, int width, int height, int position) {
     bool neighbors[8] = {};
@@ -70,12 +54,12 @@ int aliveNeighbors(bool *board, int width, int height, int position) {
     return result;
 }
 
-void stepGameOfLife(GameState *state) {
-    unsigned int boardSize = state->board.width * state->board.height;
+void stepGameOfLife(Board *board) {
+    unsigned int boardSize = board->width * board->height;
     bool *newBoard = (bool *)malloc(boardSize * sizeof(bool));
     for (int i = 0; i < boardSize; i++) {
-        int aliveCounter = aliveNeighbors(state->board.data, state->board.width, state->board.height, i);
-        if (!state->board.data[i]) {
+        int aliveCounter = aliveNeighbors(board->data, board->width, board->height, i);
+        if (!board->data[i]) {
             if (aliveCounter == 3) {
                 newBoard[i] = true;
             } else {
@@ -92,7 +76,7 @@ void stepGameOfLife(GameState *state) {
         }
     }
 
-    memcpy(state->board.data, newBoard, boardSize);
+    memcpy(board->data, newBoard, boardSize);
 
     free(newBoard);
 }
@@ -197,8 +181,8 @@ void stepGameOfLifePythonPart(GameState *state) {
     Py_DECREF(arguments);
 }
 
-void stepGameOfLifePythonNumpy(GameState *state) {
-    const char * moduleNameString = "simulation";
+void stepGameOfLifePythonNumpy(Board *board) {
+    const char *moduleNameString = "simulation";
     PyObject *moduleName = PyUnicode_DecodeFSDefault(moduleNameString);
     PyObject *module = PyImport_Import(moduleName);
     Py_DECREF(moduleName);
@@ -221,12 +205,12 @@ void stepGameOfLifePythonNumpy(GameState *state) {
     }
 
     PyObject *arguments = PyTuple_New(3);
-    unsigned int boardSize = state->board.width * state->board.height;
+    unsigned int boardSize = board->width * board->height;
     long int dims[1] = {boardSize};
-    PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_BOOL, &state->board.data);
+    PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_BOOL, &board->data);
     PyTuple_SetItem(arguments, 0, arr);
-    PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
-    PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
+    PyTuple_SetItem(arguments, 1, PyLong_FromLong(board->width));
+    PyTuple_SetItem(arguments, 2, PyLong_FromLong(board->height));
 
     PyObject *result = PyObject_CallObject(function, arguments);
     Py_DECREF(arguments);
@@ -255,7 +239,7 @@ void update(GameState *state) {
     // }
     struct GameOfLifeFunction {
         const char name[30];
-        void (*function)(GameState *state);
+        void (*function)(Board *board);
     };
 
     GameOfLifeFunction functions[4] = {
@@ -265,15 +249,15 @@ void update(GameState *state) {
         // {"Python:     ", stepGameOfLifePython},
     };
 
-    double start = glfwGetTime();
+    double start = getTime();
     double end;
     for (int i = 0; i < 4; i++) {
         if (functions[i].function == NULL) {
             continue;
         }
 
-        functions[i].function(state);
-        end = glfwGetTime();
+        functions[i].function(&state->board);
+        end = getTime();
         printf("%s %fs\n", functions[i].name, end - start);
         start = end;
     }
@@ -304,37 +288,4 @@ void initGameState(GameState *state) {
             state->board.data[(start_row + row) * state->board.width + start_col + col] = pattern[row][col];
         }
     }
-}
-
-int main(int argc, char *argv[]) {
-    GameState state = {};
-    initGameState(&state);
-
-    setupPython();
-    setupGLFW(&state);
-    // callPythonFunction(argc, argv);
-
-    if (!state.window.handle) {
-        return 1;
-    }
-
-    double timer = glfwGetTime();
-    while (!glfwWindowShouldClose(state.window.handle)) {
-        calculateFrameTime(&state);
-
-        input(&state);
-
-        if (glfwGetTime() - timer > 0.1f) {
-            update(&state);
-            timer = glfwGetTime();
-        }
-
-        render(&state);
-
-        showFrameTime(&state.window, state.frameTime);
-    }
-
-    tearDownGLFW(&state.window);
-    tearDownPython();
-    return 0;
 }

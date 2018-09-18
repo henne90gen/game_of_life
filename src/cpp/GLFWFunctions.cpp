@@ -1,7 +1,17 @@
 #include "GLFWFunctions.h"
+#include "Helper.h"
 
 void errorCallback(int error, const char *description) {
     fprintf(stderr, "GLFW error occured (%d): %s\n", error, description);
+}
+
+void input(GameState *state) {
+    // move key state from current to previous
+    for (int i = 0; i < sizeof(state->keyboard.data) / sizeof(Key); i++) {
+        changeKeyState(&state->keyboard.data[i], state->keyboard.data[i].current);
+    }
+
+    glfwPollEvents();
 }
 
 void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -43,41 +53,43 @@ void windowRefreshCallback(GLFWwindow *window) {
     glViewport(0, 0, width, height);
 }
 
-void setupGLFW(GameState *state) {
+GLFWwindow *setupGLFW(GameState *state) {
     if (!glfwInit()) {
         fprintf(stderr, "Could not initialize GLFW");
-        return;
+        return NULL;
     }
 
     glfwSetErrorCallback(errorCallback);
 
-    state->window.handle = glfwCreateWindow(640, 480, "My Window", NULL, NULL);
-    if (!state->window.handle) {
-        return;
+    GLFWwindow *window = glfwCreateWindow(640, 480, "My Window", NULL, NULL);
+    if (!window) {
+        return NULL;
     }
 
-    glfwMakeContextCurrent(state->window.handle);
+    glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     glfwSwapInterval(1);
-    glfwSetWindowUserPointer(state->window.handle, (void *)state);
-    // glfwSetInputMode(state->window.handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetWindowUserPointer(window, (void *)state);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    glfwSetKeyCallback(state->window.handle, keyboardCallback);
-    glfwSetCharCallback(state->window.handle, textCallback);
-    glfwSetCursorPosCallback(state->window.handle, cursorPositionCallback);
-    glfwSetMouseButtonCallback(state->window.handle, mouseButtonCallback);
-    glfwSetScrollCallback(state->window.handle, scrollCallback);
-    glfwSetWindowRefreshCallback(state->window.handle, windowRefreshCallback);
+    glfwSetKeyCallback(window, keyboardCallback);
+    glfwSetCharCallback(window, textCallback);
+    glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetScrollCallback(window, scrollCallback);
+    glfwSetWindowRefreshCallback(window, windowRefreshCallback);
+
+    return window;
 }
 
-void showFrameTime(Window *window, double frameTime) {
+void showFrameTime(GLFWwindow *window, double frameTime) {
     std::string newTitle =
         "My Window " + std::to_string(frameTime) + " (" + std::to_string(1000.0 / frameTime) + "fps)";
-    glfwSetWindowTitle(window->handle, newTitle.c_str());
+    glfwSetWindowTitle(window, newTitle.c_str());
 }
 
-void tearDownGLFW(Window *window) {
-    glfwDestroyWindow(window->handle);
+void tearDownGLFW(GLFWwindow *window) {
+    glfwDestroyWindow(window);
     glfwTerminate();
 }
