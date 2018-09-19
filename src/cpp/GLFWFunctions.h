@@ -8,7 +8,6 @@
 
 #include "Simulation.h"
 
-
 GLFWwindow *setupGLFW(GameState *state);
 
 void tearDownGLFW(GLFWwindow *window);

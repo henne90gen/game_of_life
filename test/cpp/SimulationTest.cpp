@@ -3,91 +3,49 @@
 #include "Interface.h"
 
 double getTime() { return 0; }
+double getRandom() { return 0; }
 
 SUITE(GameOfLife) {
-    TEST(LiveCellWithLessThanTwoLiveNeighbors) {
+    TEST(EmptyCellDoesNothing) {
         Board board = {};
         board.width = 5;
         board.height = 5;
-        board.data[0] = true;
 
-        stepGameOfLife(&board);
+        stepGame(&board);
 
-        CHECK_EQUAL(board.data[0], false);
-
-        board.data[0] = true;
-        board.data[1] = true;
-
-        stepGameOfLife(&board);
-
-        CHECK_EQUAL(board.data[0], false);
-        CHECK_EQUAL(board.data[1], false);
+        for (int i = 0; i < board.height * board.width; i++) {
+            CHECK_EQUAL(Species::none, board.data[i].species);
+            CHECK_EQUAL(0, board.data[i].strength);
+        }
     }
 
-    TEST(LiveCellWithTwoLiveNeighbors) {
+    TEST(LiveCellSplitsItself) {
         Board board = {};
         board.width = 5;
         board.height = 5;
-        board.data[0] = true;
-        board.data[1] = true;
-        board.data[2] = true;
+        board.data[0] = {Species::blue, 100};
 
-        stepGameOfLife(&board);
+        stepGame(&board);
 
-        CHECK_EQUAL(board.data[0], false);
-        CHECK_EQUAL(board.data[1], true);
-        CHECK_EQUAL(board.data[2], false);
+        CHECK_EQUAL(Species::blue, board.data[0].species);
+        CHECK_EQUAL(Species::blue, board.data[1].species);
+        CHECK_EQUAL(75, board.data[0].strength);
+        CHECK_EQUAL(25, board.data[1].strength);
     }
 
-    TEST(LiveCellWithThreeLiveNeighbors) {
+    TEST(LiveCellSpillsOverToCellOfOtherSpecies) {
         Board board = {};
         board.width = 5;
         board.height = 5;
-        board.data[0] = true;
-        board.data[1] = true;
-        board.data[2] = true;
-        board.data[6] = true;
+        board.data[0] = {Species::blue, 100};
+        board.data[1] = {Species::green, 100};
 
-        stepGameOfLife(&board);
+        stepGame(&board);
 
-        CHECK_EQUAL(board.data[0], true);
-        CHECK_EQUAL(board.data[1], true);
-        CHECK_EQUAL(board.data[2], true);
-        CHECK_EQUAL(board.data[6], true);
-    }
-
-    TEST(LiveCellWithMoreThanThreeLiveNeighbors) {
-        Board board = {};
-        board.width = 5;
-        board.height = 5;
-        board.data[0] = true;
-        board.data[1] = true;
-        board.data[2] = true;
-        board.data[5] = true;
-        board.data[6] = true;
-        board.data[7] = true;
-
-        stepGameOfLife(&board);
-
-        CHECK_EQUAL(board.data[0], true);
-        CHECK_EQUAL(board.data[1], false);
-        CHECK_EQUAL(board.data[2], true);
-        CHECK_EQUAL(board.data[5], true);
-        CHECK_EQUAL(board.data[6], false);
-        CHECK_EQUAL(board.data[7], true);
-    }
-
-    TEST(DeadCellWithThreeLiveNeighbors) {
-        Board board = {};
-        board.width = 5;
-        board.height = 5;
-        board.data[0] = true;
-        board.data[1] = true;
-        board.data[5] = true;
-
-        stepGameOfLife(&board);
-
-        CHECK_EQUAL(board.data[6], true);
+        CHECK_EQUAL(Species::blue, board.data[0].species);
+        CHECK_EQUAL(Species::green, board.data[1].species);
+        CHECK_EQUAL(75, board.data[0].strength);
+        CHECK_EQUAL(75, board.data[1].strength);
     }
 }
 

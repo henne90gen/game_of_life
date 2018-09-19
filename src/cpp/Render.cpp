@@ -103,17 +103,36 @@ void render(GameState *state) {
     void *data = malloc(state->board.width * state->board.height * 3);
     unsigned char *current = (unsigned char *)data;
     for (int i = 0; i < state->board.width * state->board.height; i++) {
-        bool tile = state->board.data[i];
-        unsigned char color = 0;
-        if (tile) {
-            color = 255;
+        Cell *cell = &state->board.data[i];
+        if (cell->species == Species::red) {
+            *current = 255;
+            current++;
+            *current = 0;
+            current++;
+            *current = 0;
+            current++;
+        } else if (cell->species == Species::green) {
+            *current = 0;
+            current++;
+            *current = 255;
+            current++;
+            *current = 0;
+            current++;
+        } else if (cell->species == Species::blue) {
+            *current = 0;
+            current++;
+            *current = 0;
+            current++;
+            *current = 255;
+            current++;
+        } else {
+            *current = 0;
+            current++;
+            *current = 0;
+            current++;
+            *current = 0;
+            current++;
         }
-        *current = color;
-        current++;
-        *current = color;
-        current++;
-        *current = color;
-        current++;
     }
 
     GLuint textureID;
