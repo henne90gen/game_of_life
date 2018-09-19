@@ -52,9 +52,6 @@ def flip(alive, alive_counter):
 
 def update_numpy(board: np.ndarray, width: int, height: int):
     Z = np.reshape(board, (width, height)).astype(int)
-    top_left = Z[0:-2, 0:-2]
-    top = Z[0:-2, 1:-1]
-    top_right = Z[0:-2, 2:]
 
     N = (Z[0:-2, 0:-2] + Z[0:-2, 1:-1] + Z[0:-2, 2:] +
          Z[1:-1, 0:-2] + Z[1:-1, 2:] +
@@ -67,11 +64,6 @@ def update_numpy(board: np.ndarray, width: int, height: int):
     Z[1:-1, 1:-1][birth | survive] = 1
 
     return Z
-
-
-def update_part(board: list, width: int, height: int, index: int):
-    alive, alive_counter = alive_neighbors(board, width, height, index)
-    return flip(alive, alive_counter)
 
 
 def update(board: list, width: int, height: int) -> list:

@@ -81,7 +81,7 @@ void stepGameOfLife(Board *board) {
     free(newBoard);
 }
 
-void stepGameOfLifePython(GameState *state) {
+void stepGameOfLifePython(Board *board) {
     PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
     PyObject *module = PyImport_Import(moduleName);
     Py_DECREF(moduleName);
@@ -104,15 +104,15 @@ void stepGameOfLifePython(GameState *state) {
     }
 
     PyObject *arguments = PyTuple_New(3);
-    unsigned int boardSize = state->board.width * state->board.height;
-    PyObject *board = PyList_New(boardSize);
+    unsigned int boardSize = board->width * board->height;
+    PyObject *pyBoard = PyList_New(boardSize);
     for (int i = 0; i < boardSize; i++) {
-        PyObject *cell = PyBool_FromLong(state->board.data[i]);
-        PyList_SetItem(board, i, cell);
+        PyObject *cell = PyBool_FromLong(board->data[i]);
+        PyList_SetItem(pyBoard, i, cell);
     }
-    PyTuple_SetItem(arguments, 0, board);
-    PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
-    PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
+    PyTuple_SetItem(arguments, 0, pyBoard);
+    PyTuple_SetItem(arguments, 1, PyLong_FromLong(board->width));
+    PyTuple_SetItem(arguments, 2, PyLong_FromLong(board->height));
 
     PyObject *result = PyObject_CallObject(function, arguments);
     Py_DECREF(arguments);
@@ -126,59 +126,10 @@ void stepGameOfLifePython(GameState *state) {
 
     for (int i = 0; i < boardSize; i++) {
         PyObject *cell = PyList_GetItem(result, i);
-        state->board.data[i] = PyLong_AsLong(cell);
+        board->data[i] = PyLong_AsLong(cell);
     }
 
     Py_DECREF(result);
-}
-
-void stepGameOfLifePythonPart(GameState *state) {
-    PyObject *moduleName = PyUnicode_DecodeFSDefault("simulation");
-    PyObject *module = PyImport_Import(moduleName);
-    Py_DECREF(moduleName);
-
-    if (!module) {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
-        fprintf(stderr, "Cannot import module \"%s\"\n", moduleName);
-    }
-
-    const char *functionName = "update_part";
-    PyObject *function = PyObject_GetAttrString(module, functionName);
-    if (!function || !PyCallable_Check(function)) {
-        if (PyErr_Occurred()) {
-            PyErr_Print();
-        }
-        fprintf(stderr, "Cannot find function \"%s\"\n", functionName);
-        return;
-    }
-
-    PyObject *arguments = PyTuple_New(4);
-    unsigned int boardSize = state->board.width * state->board.height;
-    PyObject *board = PyList_New(boardSize);
-    for (int i = 0; i < boardSize; i++) {
-        PyObject *cell = PyBool_FromLong(state->board.data[i]);
-        PyList_SetItem(board, i, cell);
-    }
-    PyTuple_SetItem(arguments, 0, board);
-    PyTuple_SetItem(arguments, 1, PyLong_FromLong(state->board.width));
-    PyTuple_SetItem(arguments, 2, PyLong_FromLong(state->board.height));
-    for (int i = 0; i < boardSize; i++) {
-        PyTuple_SetItem(arguments, 3, PyLong_FromLong(i));
-        PyObject *result = PyObject_CallObject(function, arguments);
-        if (result == NULL) {
-            Py_DECREF(function);
-            Py_DECREF(module);
-            PyErr_Print();
-            fprintf(stderr, "Call failed\n");
-        }
-        // PyObject *cell = PyList_GetItem(result, i);
-        state->board.data[i] = PyLong_AsLong(result);
-        Py_DECREF(result);
-    }
-
-    Py_DECREF(arguments);
 }
 
 void stepGameOfLifePythonNumpy(Board *board) {
@@ -240,10 +191,10 @@ void update(GameState *state) {
 
     if (state->mouse.clicked) {
         state->board.data[state->mouse.x + state->board.width * state->mouse.y] = true;
-        state->board.data[state->mouse.x + 1 + state->board.width * state->mouse.y] = true;
-        state->board.data[state->mouse.x - 1 + state->board.width * state->mouse.y] = true;
-        state->board.data[state->mouse.x + state->board.width * (state->mouse.y + 1)] = true;
-        state->board.data[state->mouse.x + state->board.width * (state->mouse.y - 1)] = true;
+        // state->board.data[state->mouse.x + 1 + state->board.width * state->mouse.y] = true;
+        // state->board.data[state->mouse.x - 1 + state->board.width * state->mouse.y] = true;
+        // state->board.data[state->mouse.x + state->board.width * (state->mouse.y + 1)] = true;
+        // state->board.data[state->mouse.x + state->board.width * (state->mouse.y - 1)] = true;
     }
 
     struct GameOfLifeFunction {
@@ -251,16 +202,15 @@ void update(GameState *state) {
         void (*function)(Board *board);
     };
 
-    GameOfLifeFunction functions[4] = {
+    GameOfLifeFunction functions[3] = {
         {"C++:        ", stepGameOfLife}, //
-        // {"PythonNumpy:", stepGameOfLifePythonNumpy}, //
-        // {"PythonPart: ", stepGameOfLifePythonPart},
-        // {"Python:     ", stepGameOfLifePython},
+        {"PythonNumpy:", stepGameOfLifePythonNumpy}, //
+        {"Python:     ", stepGameOfLifePython},
     };
 
     double start = getTime();
     double end;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         if (functions[i].function == NULL) {
             continue;
         }
