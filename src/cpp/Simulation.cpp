@@ -10,7 +10,7 @@
 #include "Interface.h"
 #include "PythonFunctions.h"
 
-void addNeighbor(Board *board, std::map<std::string, Cell> neighborMap, std::string name, int index, int xdir,
+void addNeighbor(Board *board, std::map<std::string, Cell> &neighborMap, std::string name, int index, int xdir,
                  int ydir) {
     int neighborIndex = index + xdir + ydir * board->width;
     int x = index % board->width;

@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 import numpy as np
 
 initialized = False
@@ -81,8 +82,11 @@ def update_cell(cell, neighbors):
     new_neighbors = dict([("left", None), ("right", None),
                           ("top", None), ("bottom", None)])
     if cell[1] >= 10:
-        cell = (cell[0], cell[1] // 2)
-        new_neighbors["right"] = tuple(cell)
+        counter = len(neighbors)
+        cell = (cell[0], int(math.floor(cell[1] / counter)))
+        for key in ["left", "right", "top", "bottom"]:
+            if key in neighbors:
+                new_neighbors[key] = tuple(cell)
     # print(cell)
     # if cell[1] >= 10:
     #     new_species = (cell[0] + 1) % 4
