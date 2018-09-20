@@ -29,11 +29,16 @@ union Keyboard {
     Key data[7];
 };
 
-enum Species { red, green, blue, none };
+enum Species { none, red, green, blue };
 
 struct Cell {
     Species species = Species::none;
     int strength = 0;
+};
+
+struct Neighbors {
+    Cell cells[4];
+    int next = 0;
 };
 
 #define BOARD_WIDTH 20

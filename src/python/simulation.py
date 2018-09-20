@@ -71,3 +71,22 @@ def update(board: list, width: int, height: int) -> list:
         map(lambda arr: flip(arr[0], arr[1]),
             map(lambda i: alive_neighbors(board, width, height, i),
                 range(len(board)))))
+
+
+def update_cell(cell, neighbors):
+    # cell: tuple(species, strength), neighbors: dict(left, right, top, bottom)
+    # ->
+    # cell: tuple(species, strength), neighbors: dict(left, right, top, bottom)
+
+    new_neighbors = dict([("left", None), ("right", None),
+                          ("top", None), ("bottom", None)])
+    if cell[1] >= 10:
+        cell = (cell[0], cell[1] // 2)
+        new_neighbors["right"] = tuple(cell)
+    # print(cell)
+    # if cell[1] >= 10:
+    #     new_species = (cell[0] + 1) % 4
+    #     if new_species == 0:
+    #         new_species += 1
+    #     cell = (new_species, cell[1] - 1)
+    return cell, new_neighbors

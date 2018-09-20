@@ -104,8 +104,9 @@ void render(GameState *state) {
     unsigned char *current = (unsigned char *)data;
     for (int i = 0; i < state->board.width * state->board.height; i++) {
         Cell *cell = &state->board.data[i];
+        int color = cell->strength * 255.0 / 100.0;
         if (cell->species == Species::red) {
-            *current = 255;
+            *current = color;
             current++;
             *current = 0;
             current++;
@@ -114,7 +115,7 @@ void render(GameState *state) {
         } else if (cell->species == Species::green) {
             *current = 0;
             current++;
-            *current = 255;
+            *current = color;
             current++;
             *current = 0;
             current++;
@@ -123,7 +124,7 @@ void render(GameState *state) {
             current++;
             *current = 0;
             current++;
-            *current = 255;
+            *current = color;
             current++;
         } else {
             *current = 0;

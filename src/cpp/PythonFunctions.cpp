@@ -1,4 +1,5 @@
 #include "SimulationConfig.h"
+#include "PythonFunctions.h"
 
 #include "Python.h"
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
@@ -13,6 +14,7 @@
 #include <array>
 #include <algorithm>
 #include <iterator>
+#include <map>
 
 int *importNumpy() {
     // this wrapper is necessary, because import_array is a macro that tries to return something
@@ -43,6 +45,7 @@ void setupPython() {
                      '\n');
     std::string scriptDir = std::string(PROJECT_SOURCE_DIR) + "/python/";
     std::string pythonPath = cleanedSystemPythonPath + ":" + scriptDir;
+    // std::cout << pythonPath << std::endl;
     Py_SetPath(std::wstring(pythonPath.begin(), pythonPath.end()).c_str());
 
     // add modules that need to be accessible from python here
@@ -107,4 +110,108 @@ void tearDownPython() {
     if (error < 0) {
         fprintf(stderr, "Python shutdown failed: %d", error);
     }
+}
+
+PyObject *getPythonFunction(std::string moduleName, std::string functionName) {
+    std::string completeFunctionName = moduleName + "." + functionName;
+    static std::map<std::string, PyObject *> functionMap = std::map<std::string, PyObject *>();
+    auto search = functionMap.find(completeFunctionName);
+    if (search != functionMap.end()) {
+        return search->second;
+    }
+
+    PyObject *moduleNameUnicode = PyUnicode_FromString(moduleName.c_str());
+    PyObject *module = PyImport_Import(moduleNameUnicode);
+    Py_DECREF(moduleNameUnicode);
+
+    if (!module) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot import module \"%s\"\n", moduleName);
+        return NULL;
+    }
+
+    PyObject *function = PyObject_GetAttrString(module, functionName.c_str());
+    if (!function || !PyCallable_Check(function)) {
+        if (PyErr_Occurred()) {
+            PyErr_Print();
+        }
+        fprintf(stderr, "Cannot find function \"%s\"\n", functionName);
+        function = NULL;
+    }
+
+    Py_DECREF(module);
+    return function;
+}
+
+PyObject *convertCellToTuple(Cell &cell) {
+    PyObject *pyCell = PyTuple_New(2);
+    PyTuple_SetItem(pyCell, 0, PyLong_FromLong(cell.species));
+    PyTuple_SetItem(pyCell, 1, PyLong_FromLong(cell.strength));
+    return pyCell;
+}
+
+Cell convertTupleToCell(PyObject *pyCell) {
+    Cell cell = {};
+    PyObject *pySpecies = PyTuple_GetItem(pyCell, 0);
+    long species = PyLong_AsLong(pySpecies);
+    if (species < 0 || species > 3) {
+        fprintf(stderr, "Invalid species %d, using 'none' instead.\n", species);
+        species = Species::none;
+    }
+    cell.species = (Species)species;
+    PyObject *strength = PyTuple_GetItem(pyCell, 1);
+    cell.strength = PyLong_AsLong(strength);
+    return cell;
+}
+
+PyObject *convertNeighborMapToDict(std::map<std::string, Cell> &neighborMap) {
+    PyObject *result = PyDict_New();
+    for (auto it = neighborMap.begin(); it != neighborMap.end(); it++) {
+        PyDict_SetItem(result, PyUnicode_FromString(it->first.c_str()), convertCellToTuple(it->second));
+    }
+    return result;
+}
+
+std::map<std::string, Cell> convertNeighborDictToMap(PyObject *neighborDict) {
+    std::map<std::string, Cell> neighborMap = std::map<std::string, Cell>();
+    PyObject *items = PyDict_Items(neighborDict);
+    for (int i = 0; i < PyObject_Length(items); i++) {
+        PyObject *item = PyList_GetItem(items, i);
+        PyObject *pyKey = PyTuple_GetItem(item, 0);
+        PyObject *pyValue = PyTuple_GetItem(item, 1);
+        if (pyValue == Py_None) {
+            continue;
+        }
+        std::string key = std::string(PyUnicode_AsUTF8(pyKey));
+        Cell cell = convertTupleToCell(pyValue);
+        neighborMap[key] = cell;
+    }
+    return neighborMap;
+}
+
+std::pair<Cell, std::map<std::string, Cell>> updateCell(Cell &cell, std::map<std::string, Cell> &neighborMap) {
+    PyObject *arguments = PyTuple_New(2);
+    PyTuple_SetItem(arguments, 0, convertCellToTuple(cell));
+    PyObject *neighbors = convertNeighborMapToDict(neighborMap);
+    PyTuple_SetItem(arguments, 1, neighbors);
+
+    PyObject *function = getPythonFunction("simulation", "update_cell");
+    PyObject *result = PyObject_CallObject(function, arguments);
+    Py_DECREF(arguments);
+
+    if (result == NULL) {
+        Py_DECREF(function);
+        PyErr_Print();
+        fprintf(stderr, "Updating cell failed!\n");
+        return std::pair<Cell, std::map<std::string, Cell>>();
+    }
+
+    Cell newCell = convertTupleToCell(PyTuple_GetItem(result, 0));
+    PyObject *newNeighbors = PyTuple_GetItem(result, 1);
+    auto newNeighborMap = convertNeighborDictToMap(newNeighbors);
+    Py_DECREF(newNeighbors);
+    Py_DECREF(result);
+    return std::pair<Cell, std::map<std::string, Cell>>(newCell, newNeighborMap);
 }
