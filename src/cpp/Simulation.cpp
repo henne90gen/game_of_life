@@ -23,20 +23,23 @@ void addNeighbor(Board *board, std::map<std::string, Cell> neighborMap, std::str
 }
 
 void addToNeighborsArray(Board *board, Neighbors *newNeighborsArray, int index,
-                         std::map<std::string, Cell> neighborsMap, std::string name, int xdir, int ydir) {
-    auto search = neighborsMap.find(name);
-    if (search == neighborsMap.end()) {
+                         std::map<std::string, Cell> *neighborsMap, std::string name, int xdir, int ydir) {
+    auto search = neighborsMap->find(name);
+    if (search == neighborsMap->end()) {
         return;
     }
     int neighborIndex = index + xdir + ydir * board->width;
     int x = index % board->width;
     int y = index / board->width;
-    if (neighborIndex < 0 || neighborIndex > board->width * board->height || x + xdir < 0 || x + xdir > board->width ||
-        y + ydir < 0 || y + ydir > board->height) {
+    if (neighborIndex < 0 || neighborIndex >= board->width * board->height || x + xdir < 0 || x + xdir >= board->width ||
+        y + ydir < 0 || y + ydir >= board->height) {
         return;
     }
     Cell cell = {species : search->second.species, strength : search->second.strength};
-    newNeighborsArray[neighborIndex].cells[newNeighborsArray[index].next] = cell;
+    if (cell.species == Species::none) {
+        return;
+    }
+    newNeighborsArray[neighborIndex].cells[newNeighborsArray[neighborIndex].next] = cell;
     newNeighborsArray[neighborIndex].next++;
 }
 
@@ -62,10 +65,10 @@ void stepGame(Board *board) {
 
         newBoard[i] = result.first;
         std::map<std::string, Cell> newNeighbors = result.second;
-        addToNeighborsArray(board, neighborsArray, i, newNeighbors, "left", -1, 0);
-        addToNeighborsArray(board, neighborsArray, i, newNeighbors, "right", 1, 0);
-        addToNeighborsArray(board, neighborsArray, i, newNeighbors, "top", 0, 1);
-        addToNeighborsArray(board, neighborsArray, i, newNeighbors, "bottom", 0, -1);
+        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "left", -1, 0);
+        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "right", 1, 0);
+        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "top", 0, 1);
+        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "bottom", 0, -1);
     }
 
     for (int i = 0; i < boardSize; i++) {
@@ -75,6 +78,9 @@ void stepGame(Board *board) {
     for (int i = 0; i < boardSize; i++) {
         for (int j = 0; j < neighborsArray[i].next; j++) {
             Cell *cell = &neighborsArray[i].cells[j];
+            if (cell->species == Species::none) {
+                continue;
+            }
             if (board->data[i].species == cell->species || board->data[i].species == Species::none) {
                 board->data[i].strength += cell->strength;
                 board->data[i].species = cell->species;

@@ -20,16 +20,6 @@ add_subdirectory(glfw)
 add_subdirectory(glm)
 add_subdirectory(unittest-cpp)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${Simulation_SOURCE_DIR}/modules)
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs REQUIRED)
-find_package(NumPy REQUIRED)
-include_directories(
-    ${PYTHON_INCLUDE_DIRS}
-    ${NumPy_INCLUDE_DIRS}
-    ${PROJECT_BINARY_DIR}
-)
-
 add_subdirectory(src)
 
 enable_testing()
