@@ -10,7 +10,7 @@
 #include "Interface.h"
 #include "PythonFunctions.h"
 
-void addNeighbor(Board *board, std::map<std::string, Cell> &neighborMap, std::string name, int index, int xdir,
+void addNeighbor(Board *board, std::map<std::string, Cell> &neighborMap, int index, std::string name, int xdir,
                  int ydir) {
     int neighborIndex = index + xdir + ydir * board->width;
     int x = index % board->width;
@@ -20,6 +20,15 @@ void addNeighbor(Board *board, std::map<std::string, Cell> &neighborMap, std::st
         return;
     }
     neighborMap[name] = board->data[neighborIndex];
+}
+
+std::map<std::string, Cell> createNeighborMap(Board *board, int index) {
+    std::map<std::string, Cell> neighborMap;
+    addNeighbor(board, neighborMap, index, "left", -1, 0);
+    addNeighbor(board, neighborMap, index, "right", 1, 0);
+    addNeighbor(board, neighborMap, index, "top", 0, 1);
+    addNeighbor(board, neighborMap, index, "bottom", 0, -1);
+    return neighborMap;
 }
 
 void addToNeighborsArray(Board *board, Neighbors *newNeighborsArray, int index,
@@ -60,39 +69,43 @@ std::pair<Cell, std::map<std::string, Cell>> updateCellFast(Cell &cell, std::map
     return std::pair<Cell, std::map<std::string, Cell>>(resultCell, resultMap);
 }
 
-void stepGame(Board *board, bool fast) {
-    unsigned int boardSize = board->width * board->height;
-    Cell *newBoard = (Cell *)malloc(boardSize * sizeof(Cell));
-    memcpy(newBoard, board->data, boardSize);
+void addNewNeighborsToNeighborsArray(Board *board, Neighbors *neighborsArray, std::map<std::string, Cell> &newNeighbors,
+                                     int index) {
+    addToNeighborsArray(board, neighborsArray, index, &newNeighbors, "left", -1, 0);
+    addToNeighborsArray(board, neighborsArray, index, &newNeighbors, "right", 1, 0);
+    addToNeighborsArray(board, neighborsArray, index, &newNeighbors, "top", 0, 1);
+    addToNeighborsArray(board, neighborsArray, index, &newNeighbors, "bottom", 0, -1);
+}
 
-    Neighbors *neighborsArray = (Neighbors *)malloc(boardSize * sizeof(Neighbors));
-    for (int i = 0; i < boardSize; i++) {
-        neighborsArray[i].next = 0;
+void applyNeighborUpdate(Cell *cell, Cell *neighbor) {
+    if (neighbor->species == Species::none) {
+        return;
     }
-
-    for (int i = 0; i < boardSize; i++) {
-        // cell, neighbors: dict(left, right, top, bottom) -> (cell, neighbors: dict(left, right, top, bottom))
-        std::map<std::string, Cell> neighborMap = std::map<std::string, Cell>();
-        addNeighbor(board, neighborMap, "left", i, -1, 0);
-        addNeighbor(board, neighborMap, "right", i, 1, 0);
-        addNeighbor(board, neighborMap, "top", i, 0, 1);
-        addNeighbor(board, neighborMap, "bottom", i, 0, -1);
-
-        std::pair<Cell, std::map<std::string, Cell>> result;
-        if (fast) {
-            result = updateCellFast(board->data[i], neighborMap);
-        } else {
-            result = updateCell(board->data[i], neighborMap);
+    if (cell->species == neighbor->species || cell->species == Species::none) {
+        cell->strength += neighbor->strength;
+        cell->species = neighbor->species;
+    } else {
+        cell->strength -= neighbor->strength;
+        if (cell->strength < 0) {
+            cell->strength *= -1;
+            cell->species = neighbor->species;
         }
-
-        newBoard[i] = result.first;
-        std::map<std::string, Cell> newNeighbors = result.second;
-        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "left", -1, 0);
-        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "right", 1, 0);
-        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "top", 0, 1);
-        addToNeighborsArray(board, neighborsArray, i, &newNeighbors, "bottom", 0, -1);
     }
+}
 
+std::pair<Cell, std::map<std::string, Cell>> updateCellFastOrSlow(Cell &cell, std::map<std::string, Cell> &neighborMap,
+                                                                  bool fast) {
+    std::pair<Cell, std::map<std::string, Cell>> result;
+    if (fast) {
+        result = updateCellFast(cell, neighborMap);
+    } else {
+        result = updateCell(cell, neighborMap);
+    }
+    return result;
+}
+
+void applyUpdatesToBoard(Board *board, Cell *newBoard, Neighbors *neighborsArray) {
+    unsigned int boardSize = board->width * board->height;
     for (int i = 0; i < boardSize; i++) {
         board->data[i] = newBoard[i];
     }
@@ -100,21 +113,37 @@ void stepGame(Board *board, bool fast) {
     for (int i = 0; i < boardSize; i++) {
         for (int j = 0; j < neighborsArray[i].next; j++) {
             Cell *cell = &neighborsArray[i].cells[j];
-            if (cell->species == Species::none) {
-                continue;
-            }
-            if (board->data[i].species == cell->species || board->data[i].species == Species::none) {
-                board->data[i].strength += cell->strength;
-                board->data[i].species = cell->species;
-            } else {
-                board->data[i].strength -= cell->strength;
-                if (board->data[i].strength < 0) {
-                    board->data[i].strength *= -1;
-                    board->data[i].species = cell->species;
-                }
-            }
+            applyNeighborUpdate(&board->data[i], cell);
         }
     }
+}
+
+Neighbors *createNeighborsArray(unsigned int boardSize) {
+    Neighbors *result = (Neighbors *)malloc(boardSize * sizeof(Neighbors));
+    for (int i = 0; i < boardSize; i++) {
+        result[i].next = 0;
+    }
+    return result;
+}
+
+void stepGame(Board *board, bool fast) {
+    unsigned int boardSize = board->width * board->height;
+    Cell *newBoard = (Cell *)malloc(boardSize * sizeof(Cell));
+    memcpy(newBoard, board->data, boardSize);
+
+    Neighbors *neighborsArray = createNeighborsArray(boardSize);
+
+    for (int i = 0; i < boardSize; i++) {
+        // cell, neighbors: dict(left, right, top, bottom) -> (cell, neighbors: dict(left, right, top, bottom))
+        std::map<std::string, Cell> neighborMap = createNeighborMap(board, i);
+
+        auto result = updateCellFastOrSlow(board->data[i], neighborMap, fast);
+
+        newBoard[i] = result.first;
+        addNewNeighborsToNeighborsArray(board, neighborsArray, result.second, i);
+    }
+
+    applyUpdatesToBoard(board, newBoard, neighborsArray);
 
     free(newBoard);
     free(neighborsArray);
@@ -124,11 +153,7 @@ void mouseClicked(GameState *state, int x, int y) {
     state->board.data[x + state->board.width * y] = {state->selectedSpecies, 100};
 }
 
-void update(GameState *state) {
-    double start = getTime();
-
-    stepGame(&state->board, state->isFastSelected);
-
+double measureAverageTimes(GameState *state, double start) {
     double end = getTime();
     double diff = end - start;
     if (state->isFastSelected) {
@@ -149,7 +174,15 @@ void update(GameState *state) {
         printf("Average: %fs\n", average);
     }
     printf("Time: %fs\n", diff);
-    start = end;
+    return start;
+}
+
+void update(GameState *state) {
+    double start = getTime();
+
+    stepGame(&state->board, state->isFastSelected);
+
+    start = measureAverageTimes(state, start);
 }
 
 void input(GameState *state) {
