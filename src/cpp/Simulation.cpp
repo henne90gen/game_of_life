@@ -31,8 +31,8 @@ void addToNeighborsArray(Board *board, Neighbors *newNeighborsArray, int index,
     int neighborIndex = index + xdir + ydir * board->width;
     int x = index % board->width;
     int y = index / board->width;
-    if (neighborIndex < 0 || neighborIndex >= board->width * board->height || x + xdir < 0 || x + xdir >= board->width ||
-        y + ydir < 0 || y + ydir >= board->height) {
+    if (neighborIndex < 0 || neighborIndex >= board->width * board->height || x + xdir < 0 ||
+        x + xdir >= board->width || y + ydir < 0 || y + ydir >= board->height) {
         return;
     }
     Cell cell = {species : search->second.species, strength : search->second.strength};
@@ -43,7 +43,24 @@ void addToNeighborsArray(Board *board, Neighbors *newNeighborsArray, int index,
     newNeighborsArray[neighborIndex].next++;
 }
 
-void stepGame(Board *board) {
+std::pair<Cell, std::map<std::string, Cell>> updateCellFast(Cell &cell, std::map<std::string, Cell> &neighborMap) {
+    Cell resultCell = {species : cell.species, strength : cell.strength};
+    std::map<std::string, Cell> resultMap;
+    if (cell.strength >= 10) {
+        int counter = neighborMap.size() + 1;
+        resultCell.strength = cell.strength / counter;
+        std::string names[4] = {"left", "right", "top", "bottom"};
+        for (auto name : names) {
+            auto search = neighborMap.find(name);
+            if (search != neighborMap.end()) {
+                resultMap[name] = {species : resultCell.species, strength : resultCell.strength};
+            }
+        }
+    }
+    return std::pair<Cell, std::map<std::string, Cell>>(resultCell, resultMap);
+}
+
+void stepGame(Board *board, bool fast) {
     unsigned int boardSize = board->width * board->height;
     Cell *newBoard = (Cell *)malloc(boardSize * sizeof(Cell));
     memcpy(newBoard, board->data, boardSize);
@@ -61,7 +78,12 @@ void stepGame(Board *board) {
         addNeighbor(board, neighborMap, "top", i, 0, 1);
         addNeighbor(board, neighborMap, "bottom", i, 0, -1);
 
-        auto result = updateCell(board->data[i], neighborMap);
+        std::pair<Cell, std::map<std::string, Cell>> result;
+        if (fast) {
+            result = updateCellFast(board->data[i], neighborMap);
+        } else {
+            result = updateCell(board->data[i], neighborMap);
+        }
 
         newBoard[i] = result.first;
         std::map<std::string, Cell> newNeighbors = result.second;
@@ -105,10 +127,28 @@ void mouseClicked(GameState *state, int x, int y) {
 void update(GameState *state) {
     double start = getTime();
 
-    stepGame(&state->board);
+    stepGame(&state->board, state->isFastSelected);
 
     double end = getTime();
-    // printf("Time: %fs\n", end - start);
+    double diff = end - start;
+    if (state->isFastSelected) {
+        state->fastTimes.push_back(diff);
+        double sum = 0;
+        for (auto &n : state->fastTimes) {
+            sum += n;
+        }
+        double average = sum / state->fastTimes.size();
+        printf("Average: %fs\n", average);
+    } else {
+        state->slowTimes.push_back(diff);
+        double sum = 0;
+        for (auto &n : state->slowTimes) {
+            sum += n;
+        }
+        double average = sum / state->slowTimes.size();
+        printf("Average: %fs\n", average);
+    }
+    printf("Time: %fs\n", diff);
     start = end;
 }
 
@@ -119,6 +159,10 @@ void input(GameState *state) {
         state->selectedSpecies = Species::green;
     } else if (state->keyboard.keys.blue.current) {
         state->selectedSpecies = Species::blue;
+    }
+    if (state->keyboard.keys.space.current && !state->keyboard.keys.space.previous) {
+        state->isFastSelected = !state->isFastSelected;
+        printf("Switching to fast=%d\n", state->isFastSelected);
     }
 
     // move key state from current to previous

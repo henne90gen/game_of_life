@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #define KEY_W 87
 #define KEY_S 83
 #define KEY_A 65
@@ -7,6 +9,7 @@
 #define KEY_1 49
 #define KEY_2 50
 #define KEY_3 51
+#define KEY_SPACE 32
 
 struct Key {
     int keyCode;
@@ -22,11 +25,12 @@ struct Keys {
     Key red = {KEY_1};
     Key green = {KEY_2};
     Key blue = {KEY_3};
+    Key space = {KEY_SPACE};
 };
 
 union Keyboard {
     Keys keys = {};
-    Key data[7];
+    Key data[8];
 };
 
 enum Species { none, red, green, blue };
@@ -55,6 +59,9 @@ struct GameState {
     Keyboard keyboard = {};
     Board board = {};
     Species selectedSpecies = Species::red;
+    bool isFastSelected = false;
+    std::vector<double> fastTimes = {};
+    std::vector<double> slowTimes = {};
 };
 
 void initGameState(GameState *state);
@@ -65,4 +72,4 @@ void input(GameState *state);
 
 void mouseClicked(GameState *state, int x, int y);
 
-void stepGame(Board *board);
+void stepGame(Board *board, bool fast);

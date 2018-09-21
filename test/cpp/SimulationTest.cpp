@@ -21,7 +21,7 @@ SUITE(GameOfLife) {
         board.width = 5;
         board.height = 5;
 
-        stepGame(&board);
+        stepGame(&board, false);
 
         for (int i = 0; i < board.height * board.width; i++) {
             CHECK_EQUAL(Species::none, board.data[i].species);
@@ -35,7 +35,7 @@ SUITE(GameOfLife) {
         board.height = 5;
         board.data[6] = {Species::blue, 100};
 
-        stepGame(&board);
+        stepGame(&board, false);
 
         CHECK_EQUAL(Species::blue, board.data[6].species);
         CHECK_EQUAL(Species::blue, board.data[5].species);
@@ -56,7 +56,7 @@ SUITE(GameOfLife) {
         board.data[6] = {Species::blue, 100};
         board.data[7] = {Species::green, 50};
 
-        stepGame(&board);
+        stepGame(&board, false);
 
         CHECK_EQUAL(Species::blue, board.data[6].species);
         CHECK_EQUAL(Species::blue, board.data[7].species);
@@ -72,7 +72,7 @@ SUITE(GameOfLife) {
         board.data[7] = {Species::green, 50};
         board.data[8] = {Species::red, 75};
 
-        stepGame(&board);
+        stepGame(&board, false);
 
         CHECK_EQUAL(Species::blue, board.data[6].species);
         CHECK_EQUAL(Species::red, board.data[7].species);
@@ -88,7 +88,7 @@ SUITE(GameOfLife) {
         board.height = 5;
         board.data[4] = {Species::blue, 100};
 
-        stepGame(&board);
+        stepGame(&board, false);
 
         CHECK_EQUAL(Species::blue, board.data[4].species);
         CHECK_EQUAL(Species::none, board.data[5].species);
