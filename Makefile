@@ -10,7 +10,7 @@ build: configure
 configure:
 	@export CC=/usr/bin/clang 
 	@export CXX=/usr/bin/clang++
-	@mkdir out -p && cd out && cmake ..
+	@mkdir out -p && cd out && cmake -G Ninja ..
 
 test:
 	@make -s build
